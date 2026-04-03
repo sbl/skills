@@ -401,6 +401,35 @@ Every object inside the RNBO subpatcher needs:
 }
 ```
 
+### RNBO MIDI objects
+
+MIDI objects inside an RNBO patcher automatically create a **MIDI inlet on rnbo~** (always the **rightmost** inlet). MIDI received on this inlet is **broadcast to all MIDI objects** in the patcher and subpatchers -- no wiring needed between midiin and notein.
+
+```json
+{ "box": { "id": "obj-notein", "maxclass": "newobj", "numinlets": 1, "numoutlets": 4, "outlettype": ["", "", "", ""], "rnbo_classname": "notein", "rnbo_extra_attributes": { "comment": "", "meta": "" }, "rnbo_serial": 1, "rnbo_uniqueid": "notein_1", "text": "notein" } }
+```
+
+**notein outlets (4 total):**
+- outlet 0: note number
+- outlet 1: velocity (0 = note off)
+- outlet 2: release velocity
+- outlet 3: MIDI channel
+
+Other MIDI objects: `midiin`, `ctlin`, `bendin`, `touchin`, `pgmin`, `sysexin` (input); `midiout`, `noteout`, `ctlout`, `bendout`, `touchout`, `pgmout`, `sysexout` (output -- creates second-from-right outlet).
+
+### RNBO inlet/outlet ordering on rnbo~ object
+
+Inlets (left to right):
+1. Signal inlets from `in~` objects (by index)
+2. Event inlets from `in` objects (by index)
+3. MIDI inlet (always rightmost, if any MIDI input object exists)
+
+Outlets (left to right):
+1. Signal outlets from `out~` objects (by index)
+2. Event outlets from `out` objects (by index)
+3. MIDI outlet (if any MIDI output object exists)
+4. Dump outlet (always rightmost, type `"list"`)
+
 ### RNBO param wiring pattern
 
 To expose params to the top-level Max patcher:
@@ -409,8 +438,18 @@ To expose params to the top-level Max patcher:
 2. Connect each param outlet 0 to codebox~ inlet
 3. In codebox~, read from `in2`, `in3`, etc. (`in1` = audio)
 4. Add param names to `rnboattrcache` on the rnbo~ object
+5. From Max, send `paramname value` message to any rnbo~ inlet
 
 ```
 [param rate 1 @min -4 @max 4] --outlet 0--> [codebox~ inlet 1]
 [param play 0 @min 0 @max 1]  --outlet 0--> [codebox~ inlet 2]
 ```
+
+### RNBO MIDI wiring pattern (Max top level)
+
+```
+[midiin] --(raw MIDI bytes)--> [rnbo~ rightmost inlet]
+[kslider] --> [midiformat] --(raw MIDI bytes)--> [rnbo~ rightmost inlet]
+```
+
+Inside RNBO, `notein` receives MIDI automatically (no explicit wiring from midiin needed).

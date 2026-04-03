@@ -152,6 +152,31 @@ let x = cond ? a : b;
 ### Constants
 `PI` `TWOPI` `HALFPI` `E` `LN2` `LN10` `SQRT2`
 
+## Stateful Objects
+
+Objects with internal state must use `new` + `@state`:
+```javascript
+@state myPhasor = new phasor();
+out1 = myPhasor.next(440);   // returns output AND advances one sample
+```
+Common: `phasor` (ramp 0-1), `cycle` (sine), `train` (impulse), `noise`.
+
+## Type Annotations
+
+```javascript
+let x: number = 5;
+let y: list = [1, 2, 3];
+let b: Int = 0;              // REQUIRED for array indexing
+function getMultiple(): list { return [1, 2, 3]; }
+```
+
+## codebox vs codebox~ (event vs signal)
+
+- **codebox** (no tilde): event-driven. Only inlet 1 is hot (triggers execution). Other inlets are cold.
+- **codebox~** (with tilde): signal-rate. Runs every sample. All outlets always output.
+- Signal connections to codebox~ inlets: per-sample updates.
+- Message connections to codebox~ inlets: update once per signal vector (more efficient).
+
 ## Common Gotchas
 
 1. **`@param` needs decorator**: `@param({min:0, max:1}) x = 0;` not `@param x = 0;`
@@ -159,8 +184,12 @@ let x = cond ? a : b;
 3. **`new` required for buffer**: `new buffer("name")` not `buffer("name")`
 4. **peek returns array**: `peek(buf, idx)[0]` to get the value
 5. **poke arg order**: `poke(buf, value, idx)` -- value before index
-6. **`: Int` for bitwise ops only** -- don't annotate everything
+6. **`: Int` required for array indexing** -- `let i: Int = 0;` then `arr[i]`
 7. **Loops must be bounded** -- `while (i < n && i < 64)`
 8. **No `.codebox` files** -- code lives embedded in the .maxpat JSON
 9. **`let` is valid and preferred** over `var` for local variables
 10. **No `@initial` on param objects** -- default is positional: `param name default @min X @max Y`
+11. **Cannot access buffers in `init()`** -- use `startup()` instead
+12. **One `@state` declaration per line** -- avoid `@state a = 0; @state b = 0;` on same line
+13. **List return types need annotation** -- `function foo(): list { return [1,2]; }`
+14. **`dspsetup()`** -- codebox~ only, called when audio starts or sample rate changes
